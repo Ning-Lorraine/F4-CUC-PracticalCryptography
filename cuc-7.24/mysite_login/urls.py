@@ -29,11 +29,11 @@ from django.urls import re_path as url,include
 from login import views
  
 urlpatterns = [
-    # url(r'',views.login),
     url(r'^admin/', admin.site.urls),
     url(r'^index/', views.index),
     url(r'^login/', views.login),
     url(r'^register/', views.register),
     url(r'^logout/', views.logout),
-    url(r'^captcha', include('captcha.urls'))  # 增加这一行
+    url(r'^captcha', include('captcha.urls')),  # 增加这一行
+    url(r'',views.index),
 ]
