@@ -76,7 +76,7 @@
 
 ## 附录
 
-- 手动将CARoot.crt，intermedia.crt证书添加至浏览器收信人根证书，中间证书颁发机构列表，否则浏览器将视其为不安全连接
+- 手动将CARoot.crt，intermedia.crt证书添加至浏览器受信任的根证书，中间证书颁发机构列表，否则浏览器将视其为不安全连接
 
   ![](img/root.png)
 
