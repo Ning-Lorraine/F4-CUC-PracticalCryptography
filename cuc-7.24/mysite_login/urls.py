@@ -27,13 +27,17 @@ from django.urls import re_path as url,include
 # 而是在根路由下直接编写路由条目，同样也没有使用反向解析名（name参数）。
 # from django.conf.urls import url（不同）
 from login import views
- 
+
 urlpatterns = [
+    # url(r'',views.login),
     url(r'^admin/', admin.site.urls),
     url(r'^index/', views.index),
     url(r'^login/', views.login),
     url(r'^register/', views.register),
     url(r'^logout/', views.logout),
-    url(r'^captcha', include('captcha.urls')),  # 增加这一行
-    url(r'',views.index),
+    url(r'^upload/', views.upload),
+    url(r'^list/', views.list),
+    url(r'^delete/', views.delete),
+    url(r'^download/', views.download),
+    url(r'^captcha', include('captcha.urls'))  # 增加这一行
 ]

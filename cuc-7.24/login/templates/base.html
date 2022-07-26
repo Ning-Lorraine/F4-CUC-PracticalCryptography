@@ -12,6 +12,7 @@
  
     <!-- Bootstrap -->
     <link href="/static/bootstrap-3.4.1-dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="shortcut icon" href="#" />
     <!-- <link href="../../static/bootstrap-3.4.1-dist/css/bootstrap.min.css" rel="stylesheet"> -->
     <!-- <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous" rel="stylesheet"> -->
  
@@ -42,6 +43,8 @@
         <div class="collapse navbar-collapse" id="my-nav">
             <ul class="nav navbar-nav">
               <li class="active"><a href="/index/">主页</a></li>
+              <li class="active"><a href="/upload/">文件上传</a></li>
+              <li class="active"><a href="/list/">文件列表</a></li>
             </ul>
             <ul class="nav navbar-nav navbar-right">
                 {% if request.session.is_login %}

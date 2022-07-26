@@ -1,9 +1,24 @@
+{#login/templates/login/index.html#}
+
 {% extends 'base.html' %}
 {% block title %}主页{% endblock %}
-{% block content %}
+{{% block content %}
+    <div class="container">
+        <div class="col-md-4 col-md-offset-4">
     {% if request.session.is_login %}
-    <h1>你好,{{ request.session.user_name }}！欢迎回来！</h1>
+    <h1>你好,{{ request.session.user_name }}！<br>欢迎回来！</h1>
+    <br><br>
+    <form class='form-upload' action="/upload/" method="post">
+        {% csrf_token %}
+        <button onclick="window.location.href='/upload'" class="btn btn-default pull-left">上传文件</button>
+    </form>
+    <form class='form-download' action="/download/" method="post">
+        {% csrf_token %}
+        <button onclick="window.location.href='/download'" class="btn btn-primary pull-right">下载文件</button>
+    </form>
     {% else %}
-    <h1>你尚未登录，只能访问公开内容！</h1>
+    <h1>你尚未登录，不可以访问哦！</h1>
     {% endif %}
+        </div>
+    </div> <!-- /container -->
 {% endblock %}

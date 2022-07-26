@@ -1,0 +1,18 @@
+{#login/templates/login/download.html#}
+{% extends 'base.html' %}
+{% block title %}下载文件{% endblock %}
+{{% block content %}
+    <div class="container">
+        <div class="col-md-4 col-md-offset-4">
+            <form class='form-download' action="download" method="post">
+                {% csrf_token %}
+                {% if request.session.is_login %}
+                    <h1>你好,{{ request.session.user_name }}！<br></h1>
+                    <h2>请选择下载文件！</h2>
+                {% else %}
+                    <h1>你尚未登录，不可以访问哦！</h1>
+                {% endif %}
+            </form>
+        </div>
+    </div> <!-- /container -->
+{% endblock %}
