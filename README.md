@@ -79,7 +79,9 @@
 - 运行
 
   ```bash
-  python manage.py runserv_plus pan.cuc.com:8000 --cert app.crt --key-file app.key
+  python manage.py runserver_plus
+  
+  python manage.py runserver_plus pan.cuc.com:8000 --cert app.crt --key-file app.key
   ```
 
 
