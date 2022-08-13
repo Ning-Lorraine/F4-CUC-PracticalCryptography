@@ -1,0 +1,20 @@
+[[source]]
+url = "https://pypi.tuna.tsinghua.edu.cn/simple/"
+verify_ssl = true
+name = "tsinghua"
+
+[packages]
+django = "==4.0.6"
+pymysql = "*"
+django-simple-captcha = "*"
+config = "*"
+cryptography = "*"
+pynacl = "*"
+django-extensions = "*"
+django-werkzeug-debugger-runserver = "*"
+pyopenssl = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.8"
