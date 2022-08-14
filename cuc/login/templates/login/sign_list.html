@@ -1,0 +1,84 @@
+{#login/templates/login/sign_list.html#}
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}数字签名{% endblock %}
+{% block css %}
+    <link rel="stylesheet" href="{% static 'css/login.css' %}">
+{% endblock %}
+{{% block content %}
+    <div class="container">
+        {% if request.session.is_login %}
+            <!-- <div style="margin-bottom: 8px">
+                <a class="btn btn-success" href="/sign_list/">
+                    <span class="'glyphicon glyphicon-plus-sign" aria-hidden="true"></span>
+                    新增文件
+                </a> -->
+            </div>
+            </div class="panel panel-default">
+                <div class="panel-heading">
+                    <span class="glyphicon glyphicon-th-list" aria-hidden="true"></span>
+                    密钥管理
+                </div>
+
+                <table class="table table-bordered">
+                    <thread>
+                    <tr>
+                        <!-- <th>id</th> -->
+                        <th>用户名</th>
+                        <th>私钥</th>
+                        <th>公钥</th>
+                        <th>操作</th>
+                    </tr>
+                    </thread>
+                    <tbody>
+                    {% for obj in queryset %}
+                        <tr>
+                            <!-- <th>{{obj.id}}</th> -->
+                            <td>{{obj.name}}</td>
+                            <td>{{obj.secret_key}}</td>
+                            <td>{{obj.public_key}}</td>
+                            <td>
+                                <a class="btn btn-danger btn-xs" href="#">签名</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <h1>你尚未登录，无权访问用户私钥！</h1>
+            </div>
+            </div class="panel panel-default">
+                <div class="panel-heading">
+                    <span class="glyphicon glyphicon-th-list" aria-hidden="true"></span>
+                    密钥管理
+                </div>
+
+                <table class="table table-bordered">
+                    <thread>
+                    <tr>
+                        <!-- <th>id</th> -->
+                        <th>用户名</th>
+                        <!-- <th>私钥</th> -->
+                        <th>公钥</th>
+                        <!-- <th>操作</th> -->
+                    </tr>
+                    </thread>
+                    <tbody>
+                    {% for obj in queryset %}
+                        <tr>
+                            <!-- <th>{{obj.id}}</th> -->
+                            <td>{{obj.name}}</td>
+                            <!-- <td>{{obj.secret_key}}</td> -->
+                            <td>{{obj.public_key}}</td>
+                            <!-- <td>
+                                <a class="btn btn-danger btn-xs" href="#">签名</a>
+                            </td> -->
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

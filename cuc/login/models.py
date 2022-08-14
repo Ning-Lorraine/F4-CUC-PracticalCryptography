@@ -16,6 +16,8 @@ class User(models.Model):
     email = models.EmailField(unique=False)                         #使用Django内置的邮箱类型，并且唯一
     # sex = models.CharField(max_length=32,choices=gender,default='男')
     c_time = models.DateTimeField(auto_now_add=True)
+    public_key=models.CharField(max_length=256,default='')                 #用户公钥
+    secret_key=models.CharField(max_length=256,default='')    
  
     def __str__(self):
         return self.name
@@ -27,8 +29,12 @@ class User(models.Model):
         
 
 class Key(models.Model):
-    public_key=models.CharField(max_length=256)          
-    secret_key=models.CharField(max_length=256)          
+    # public_key=models.CharField(max_length=256)          
+    # secret_key=models.CharField(max_length=256)          
+    filename = models.FileField(upload_to = 'upload/%Y%m%d',default='')
+    session_key=models.CharField(max_length=256,default='')  
+    en_sha256=models.CharField(max_length=256, default=' ') 
+    # create_time = models.DateTimeField(auto_now=True,default=timezone.now)     
 
 # class FileInfo(models.Model):
 #     file_name = models.CharField(max_length=500)
