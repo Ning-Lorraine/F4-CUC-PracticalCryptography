@@ -1,0 +1,59 @@
+{#login/templates/login/upload.html#}
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}分享文件{% endblock %}
+{% block css %}
+    <link rel="stylesheet" href="{% static 'css/login.css' %}">
+{% endblock %}
+    
+
+{{% block content %}
+                
+    <div class="container">
+
+        {% if message %}
+                <div class="alert alert-warning">{{ message }}</div>
+        {% endif %}
+
+        <div class="panel panel-default">
+            <table class="table table-bordered">
+                <div style="display:none">{{flag}}</div>
+                {% if flag %}
+                    <thread>
+                    <tr>
+                        <th>文件名</th>
+                        <th>时间戳</th>
+                        <th>获取分享链接</th>
+                    </tr>
+                    </thread>
+                    <tbody>
+                        <tr>
+                            <td>{{share_token.filename}}</td>
+                            <td>{{share_token.time}}</td> 
+                            <td>
+                                <a class="btn btn-primary btn-xs" href="/get_share_url_time/?token={{share_token.token}}">获取分享链接</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                {% else %}
+                    <thread>
+                        <tr>
+                            <th>文件名</th>
+                            <th>开放访问次数</th>
+                            <th>获取分享链接</th>
+                        </tr>
+                        </thread>
+                        <tbody>
+                            <tr>
+                                <td>{{share_token.filename}}</td>
+                                <td>{{share_token.share_numbers}}</td> 
+                                <td>
+                                    <a class="btn btn-primary btn-xs" href="/get_share_url_num/?token={{share_token.token}}">获取分享链接</a>
+                                </td>
+                            </tr>
+                        </tbody>
+                {% endif %}
+            </table>
+        </div>
+    </div>
+{% endblock %}
