@@ -2,7 +2,7 @@
  
 from django.shortcuts import render,redirect
 from . import models
-from .forms import UserForm,RegisterForm,FileForm
+from .forms import UserForm,RegisterForm,FileForm,KeyForm
 import os
 import re
 from django.contrib.auth.hashers import make_password, check_password
@@ -140,26 +140,47 @@ def handle_upload_file(file,userfile):
     # 公钥私钥存储
 
     models.Key.objects.create(
-        filename=file.name,
         public_key = signing_key,
         secret_key = verify_key_b64,
     )
 
+    # file_object=request.FILES.get('avatar')
     with open('./static/files/'+file.name,mode='wb') as f:
         for chunk in file.chunks():
             content += chunk
             # 先使用对称密钥加密，然后使用用户私钥签名存储
             c = key.encrypt(chunk)
-            print(c)
             signed_b64 = signing_key.sign(b"c", encoder=Base64Encoder)
             f.write(signed_b64)
+    # passlib中sha256输入最长为4096个字符，还没想到好的文件哈希方法，先前截取4096位
+    # userfile.sha256 = sha256_crypt.hash(str(content)[0:4096])  # str1.encode('utf-8')
     f.close()
 
+
+import random
+import string
+
+# 生成随机提取码
+def createRandomString(len):
+    raw = ""
+    range1 = range(58, 65) # between 0~9 and A~Z
+    range2 = range(91, 97) # between A~Z and a~z
+
+    i = 0
+    while i < len:
+        seed = random.randint(48, 122)
+        if ((seed in range1) or (seed in range2)):
+            continue
+        raw += chr(seed)
+        i += 1
+    # print(raw)
+    return raw
 
 def upload(request):
     message=''
     form=FileForm(data=request.POST,files=request.FILES)
     file_object=request.FILES.get('avatar')
+    
     if request.method == "GET":
         form=FileForm()
         return render(request,'login/upload.html',{'form':form})
@@ -183,11 +204,27 @@ def upload(request):
                 return render(request, 'login/upload.html', locals())
 
             else:
-                file_path=os.path.join('./static/files/',file_object.name)
+                same_filename = models.File.objects.filter(filename=file_object.name)
+                if same_filename: #文件名重复
+                    queryset=models.File.objects.all()
+                    # num = 0
+                    for obj in queryset:
+                        if obj.filename == file_object.name:
+                            obj.count = obj.count +1
+                            obj.save()
+                            num = obj.count
+                    
+                    str1='.'
+                    str2=file_object.name[file_object.name.index(str1):]
+                    file_object.name = file_object.name[:file_object.name.index(str1)]
+                    file_object.name = file_object.name + '('+str(num)+')'+str2
+                    file_path=os.path.join('./static/files/',file_object.name)
+                else:
+                    file_path=os.path.join('./static/files/',file_object.name)
                 f=open('./static/files/'+file_object.name,mode='wb')
                 for chunk in file_object.chunks():
                     content+=chunk
-                #     f.write(chunk)
+                    f.write(chunk)
                 file_sha256 = hashlib.sha256(str(content).encode('utf-8')[0:4096]).hexdigest()
                 # f.close()
                 
@@ -196,9 +233,14 @@ def upload(request):
                     # username=request.session['user_name'],
                     filename=file_object.name,
                     size=file_object.size,
-                    sha256 = file_sha256
-                    )
+                    sha256 = file_sha256,
+                    keynumber = str(createRandomString(6))
+                ) 
                 handle_upload_file(file_object,file)
+            # file.username = request.session['user_name']
+            # file.filename = request.FILES['filename'].name
+            # file.size = request.FILES['filename'].size
+
         else:
             message="文件备注不能为空"
             return render(request,'login/upload.html',{'message':message})
@@ -211,7 +253,7 @@ def list(request):
     queryset=models.File.objects.all()
 
     for obj in queryset:
-        print(obj.user_name,obj.custom_filename,obj.filename,obj.size,obj.sha256,obj.create_time)
+        print(obj.user_name,obj.custom_filename,obj.filename,obj.size,obj.sha256,obj.create_time,obj.keynumber)
     return render(request,'login/list.html',{'queryset':queryset})
 
 def delete(request):
@@ -220,6 +262,367 @@ def delete(request):
 
     return redirect('/list/')
 
-def download():
-    pass
-    return render(request, 'login/download.html')
+def download(request):
+    queryset=models.File.objects.all()
+
+    for obj in queryset:
+        print(obj.user_name,obj.custom_filename,obj.filename,obj.size,obj.sha256,obj.create_time)
+    return render(request,'login/download.html',{'queryset':queryset})
+
+# 下载需要引入的库
+from django.http import StreamingHttpResponse
+
+# 中文无法下载问题 
+from django.utils.encoding import escape_uri_path
+
+# 提交时csrf报错
+from django.views.decorators.csrf import csrf_exempt
+@csrf_exempt
+
+def login_download(request):
+    filename = request.GET.get('file')
+    filepath = os.path.join('./static/files/', filename)
+    fp = open(filepath, 'rb')
+    response = StreamingHttpResponse(fp)
+    # response = FileResponse(fp)
+    response['Content-Type'] = 'application/octet-stream'
+    response['Content-Disposition'] = 'attachment;filename="%s"' % escape_uri_path(filename)
+    return response
+    fp.close()
+
+import clipboard
+import pyperclip
+
+def logout_download(request):
+    custom_filename=request.GET.get('custom_filename')
+    user = models.File.objects.get(custom_filename=custom_filename)
+    keynumber=user.keynumber
+    # clipboard.copy("124")
+    # print(custom_filename)
+    return render(request, 'logout/verify.html',{'custom_filename':custom_filename,'keynumber':keynumber})
+
+from django.contrib import messages
+
+def logout_download_file(request):
+    # 用户输入的提取码
+    keynumber1=request.POST.get('keynumber')
+    # request.getRequestURL()
+    # user = models.File.objects.get(keynumber=keynumber1)
+    custom_filename=request.POST.get('custom_filename')
+    user = models.File.objects.get(custom_filename=custom_filename)
+    # 系统中存储的提取码
+    keynumber2=user.keynumber
+    # print(user.keynumber)
+    if keynumber1==keynumber2:
+        queryset=models.File.objects.all()
+        return render(request,'logout/file.html',{'queryset':queryset,'custom_filename':custom_filename,'user':user})
+    else:
+        message = "提取码输入错误！"
+        return render(request, 'logout/verify.html',{'message':message,'custom_filename':custom_filename})
+
+
+
+def handle_logout_download_file(request):
+    custom_filename = request.GET.get('custom_filename')
+    user = models.File.objects.get(custom_filename=custom_filename)
+    filename = user.filename
+    # print(filename)
+    filepath = os.path.join('./static/files/', str(filename))
+    fp = open(filepath, 'rb')
+    response = StreamingHttpResponse(fp)
+    # response = FileResponse(fp)
+    response['Content-Type'] = 'application/octet-stream'
+    response['Content-Disposition'] = 'attachment;filename="%s"' % escape_uri_path(str(filename))
+    return response
+    fp.close()
+    
+def download_hash(request):
+    custom_filename = request.GET.get('custom_filename')
+    user = models.File.objects.get(custom_filename=custom_filename)
+    hash = user.sha256
+    # 将原文件扩展名变为txt
+    filename=str(user.filename)
+    str1='.'
+    filename = filename[:filename.index(str1)]+'散列值.txt'
+    
+    # 将哈希值写进txt文件
+    filepath="./static/hash/"+filename
+    file = open(filepath,'w+')
+    file.write(hash)
+    file.close()
+    fp = open(filepath, 'rb')
+    response = StreamingHttpResponse(fp)
+    response['Content-Type'] = 'application/octet-stream'
+    response['Content-Disposition'] = 'attachment;filename="%s"' % escape_uri_path(filename)
+    return response
+    fp.close()
+
+
+# # win32clipboard专门用来复制粘贴的
+# import win32clipboard as wcb
+# import win32con as wc
+# def copy_url(url):
+#     # 打开复制粘贴板
+#     wcb.OpenClipboard()
+#     # 我们之前可能已经Ctrl+C了，这里是清空目前Ctrl+C复制的内容。但是经过测试，这一步即使没有也无所谓
+#     wcb.EmptyClipboard()
+#     # 将内容写入复制粘贴板,第一个参数win32con.CF_TEXT不用管，我也不知道它是干什么的
+#     # 关键第二个参数，就是我们要复制的内容，一定要传入字节
+#     share_url = url
+#     wcb.SetClipboardData(wc.CF_TEXT, "古明地觉世界第一可爱".encode("gbk"))
+#     # 关闭复制粘贴板
+#     wcb.CloseClipboard()
+     
+
+
+import time
+import base64
+import hmac
+
+
+    
+def share(request):
+    filename = request.GET.get('file')
+    return render(request,'login/share_choose.html',{'filename':filename})
+
+def share_choose(request):
+    choose =request.POST.get('choose')
+    filename = request.POST.get('filename')
+    if choose == 'num':
+        return render(request,'login/share_num.html',{'filename':filename})
+    if choose == 'time':
+        return render(request,'login/share_time.html',{'filename':filename})
+    else:
+        message = "请设置选择分享方式！"
+        return render(request, 'login/share_choose.html',{'message':message,'filename':filename})
+
+def share_file_num(request):
+    filename = request.POST.get('filename')
+    share_numbers =request.POST.get('share_numbers')
+    key= str(filename) # key设置成文件名
+    token=''
+    if share_numbers: 
+            flag = 0
+            token = build_num_token(key,share_numbers)
+            #    将生成的含分享次数的token与文件名写入数据login_token2数据表
+            share_token = models.Token2.objects.create(
+                            token = token,
+                            filename = filename,
+                            share_numbers = share_numbers,
+                            remain_numbers = share_numbers
+                            )
+    else:
+        message = "请设置分享次数!"
+        return render(request, 'login/share_num.html',{'message':message,'filename':filename})
+    
+    return render(request,'login/share_url.html',{'flag':flag,'token':token,'share_token':share_token})
+
+def share_file_time(request):
+    filename = request.POST.get('filename')
+    out_time =request.POST.get('out_time')
+    key= str(filename) # key设置成文件名
+    token=''
+    flag = 1
+    if out_time: #设置分享时间
+        if out_time =='3s':
+             token = build_time_token(key,3)
+        if out_time =='ten_mins':
+             token = build_time_token(key,10*60)
+        if out_time =='one_day':
+            token = build_time_token(key,24*60*60)
+        if out_time =='one_week':
+            token = build_time_token(key,7*24*60*60)
+        if out_time =='thirty_days':
+            token = build_time_token(key,30*24*60*60)
+        # 将生成的含分享时长的token与文件名写入数据login_token数据表
+        share_token = models.Token.objects.create(
+                        token = token,
+                        filename = filename,
+                        time = str(time.time())
+                        ) 
+    else:
+        message = "请设置分享时长!"
+        return render(request, 'login/share_time.html',{'message':message,'filename':filename})
+    
+    return render(request,'login/share_url.html',{'flag':flag,'token':token,'share_token':share_token})
+
+
+# def share_file(request):
+#     filename = request.POST.get('filename')
+#     out_time =request.POST.get('out_time')
+
+#     share_numbers =request.POST.get('share_numbers')
+#     key= str(filename) # key设置成文件名
+#     token=''
+#     if out_time and share_numbers:
+#         message = "仅支持设置分享次数或设置分享时长！"
+#         return render(request, 'login/share.html',{'message':message,'filename':filename})
+
+
+
+#     if out_time: #设置分享时间
+#         flag = 1
+#         if out_time =='3s':
+#              token = build_time_token(key,3)
+#         if out_time =='ten_mins':
+#              token = build_time_token(key,10*60)
+#         if out_time =='one_day':
+#             token = build_time_token(key,24*60*60)
+#         if out_time =='one_week':
+#             token = build_time_token(key,7*24*60*60)
+#         if out_time =='thirty_days':
+#             token = build_time_token(key,30*24*60*60)
+#         # 将生成的含分享时长的token与文件名写入数据login_token数据表
+#         share_token = models.Token.objects.create(
+#                         token = token,
+#                         filename = filename,
+#                         time = str(time.time())
+#                         ) 
+#         # time.sleep(4)
+#     else:
+
+#         if share_numbers: #设置分享次数
+#             flag = 0
+#             token = build_num_token(key,share_numbers)
+#             #    将生成的含分享次数的token与文件名写入数据login_token2数据表
+#             share_token = models.Token2.objects.create(
+#                             token = token,
+#                             filename = filename,
+#                             share_numbers = share_numbers,
+#                             remain_numbers = share_numbers
+#                             )
+#         else:
+#             message = "请设置分享次数或分享时长!"
+#             return render(request, 'login/share.html',{'message':message,'filename':filename})
+
+#     # time.sleep(4)
+#     # a = check_token(flag,token)
+
+#     # return HttpResponse(str(a))
+    
+#     return render(request,'login/share_url.html',{'flag':flag,'token':token,'share_token':share_token})
+
+# 摘要算法加密
+def hax(str):
+    if not isinstance(str,bytes): # 如果传入不是bytes类型，则转为bytes类型
+      try:
+        str = bytes(str,encoding="utf8")
+      except BaseException as ex:
+        raise ValueError("'%s'不可被转换为bytes类型"%str)
+ 
+    md5 = hashlib.md5()
+    # md5.update("天王盖地虎erafe23".encode(encoding='utf-8'))
+    md5.update(str)
+    # md5.update("992ksd上山打老虎da".encode(encoding='utf-8'))
+    return md5.hexdigest()
+
+# 生成含分享时长的token
+def build_time_token(message,expire):
+
+    hax_message = "%s:%s:%s"%(str(time.time()),message,str(time.time()+expire))
+
+    hax_res = hax(hax_message)
+    token = base64.urlsafe_b64encode(("%s:%s"%(hax_message,hax_res)).encode(encoding='utf-8'))
+    return token.decode("utf-8")
+
+# 验证token时间限制
+def check_time_token(token):
+    try:
+      hax_res = base64.urlsafe_b64decode(token.encode("utf8")).decode("utf-8")
+      message_list = hax_res.split(":")
+      md5 = message_list.pop(-1)
+      message = ':'.join(message_list)
+    #   print(111111111111111111111111111111111111)
+    #   print(message_list)
+    #   print(md5)
+    #   print(message)
+    #   print(hax(message))
+      if md5 != hax(message):
+        # 加密内容如果与加密后的结果不符即token不合法
+        return False
+      else:
+            if time.time() - float(message_list.pop(-1)) >0:
+            # 超时返回False
+                return False
+            else:
+            # token验证成功返回新的token
+                # return build_token(message_list.pop(-1))
+                return True
+
+    except BaseException as ex:
+      # 有异常表明验证失败或者传入参数不合法
+        return False
+
+# 生成含分享次数的token
+def build_num_token(message,share_numbers):
+    hax_message = "%s:%s:%s"%(str(time.time()),message,str(share_numbers))
+
+    hax_res = hax(hax_message)
+    token = base64.urlsafe_b64encode(("%s:%s"%(hax_message,hax_res)).encode(encoding='utf-8'))
+    return token.decode("utf-8")
+
+# # 验证token分享次数限制
+def check_num_token(token,remain_numbers):
+    try:
+        hax_res = base64.urlsafe_b64decode(token.encode("utf8")).decode("utf-8")
+        message_list = hax_res.split(":")
+        md5 = message_list.pop(-1)
+        message = ':'.join(message_list)
+      
+    #   print(111111111111111111111111111111111111)
+    #   print(message_list)
+    #   print(md5)
+    #   print(message)
+    #   print(hax(message))
+
+    # filename=message_list.pop(1)
+        if md5 != hax(message):
+            # 加密内容如果与加密后的结果不符即token不合法
+            return False  
+        else:
+            user = models.Token2.objects.get(token=token)
+            if user.remain_numbers>0:
+                # 每访问一次，数据库中剩余可访问次数减一
+                user.remain_numbers=user.remain_numbers-1
+                user.save()
+                remain_numbers =user.remain_numbers
+                print(remain_numbers)
+                return True
+            else:
+                return False
+    except BaseException as ex:
+      # 有异常表明验证失败或者传入参数不合法
+        return False
+
+
+def get_share_url_time(request):
+    token = request.GET.get('token')
+    user1 = models.Token.objects.get(token=token)
+    url = 'https://pan.cuc.com:8000/get_share_url_time/?token='
+    filename=user1.filename
+    user= models.File.objects.get(filename=filename)
+    if check_time_token(token):
+        return render(request,'login/get_share_url.html',{'user':user,'url':url,'token':token})
+    else:
+        # message = '分享链接已超时！'
+        # return render(request,'login/share_url.html',{'flag':flag,'user':user,'message':message})
+        return HttpResponse("分享链接已超时！")
+
+def get_share_url_num(request):
+    token = request.GET.get('token')
+    filename = request.GET.get('filename')
+    url = 'https://pan.cuc.com:8000/get_share_url_num/?token='
+    user1 = models.Token2.objects.get(token=token) 
+    filename=user1.filename
+    remain_numbers=user1.remain_numbers
+    user= models.File.objects.get(filename=filename)
+    if check_num_token(token,remain_numbers):
+        return render(request,'login/get_share_url.html',{'user':user,'url':url,'token':token})
+    else:
+        return HttpResponse("分享链接已超过访问次数！")
+
+
+
+
+
+

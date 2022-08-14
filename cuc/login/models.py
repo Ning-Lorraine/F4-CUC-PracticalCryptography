@@ -27,10 +27,8 @@ class User(models.Model):
         
 
 class Key(models.Model):
-    filename = models.FileField(upload_to = 'upload/%Y%m%d',default='')
     public_key=models.CharField(max_length=256)          
-    secret_key=models.CharField(max_length=256)   
-    create_time = models.DateTimeField(auto_now_add=True)       
+    secret_key=models.CharField(max_length=256)          
 
 # class FileInfo(models.Model):
 #     file_name = models.CharField(max_length=500)
@@ -47,6 +45,22 @@ class File(models.Model):
     # enckey = models.CharField(max_length=2048, default=' ')  # 用于加密的对称密钥，使用用户公钥加密存储
     sha256 = models.CharField(max_length=256, default=' ')  # 明文文件的sha256
     create_time = models.DateTimeField(auto_now_add=True)  # 上传时间
+    keynumber = models.CharField(max_length=128,unique=False,default='')#随机生成提取码
+    count = models.IntegerField(default=0) # 文件重复次数
+
 
     def __unicode__(self):
         return self.username
+
+# 存储含有分享时长的token
+class Token(models.Model):
+    token = models.CharField(max_length=255,unique=True)
+    filename = models.FileField(upload_to = 'upload/%Y%m%d') # 文件名
+    time = models.CharField(max_length=255,unique=True,default='0') # 时间戳
+
+# 存储含有分享次数的token
+class Token2(models.Model):
+    token = models.CharField(max_length=255,unique=True)
+    filename = models.FileField(upload_to = 'upload/%Y%m%d') # 文件名
+    share_numbers = models.IntegerField(unique=False,default=0)
+    remain_numbers = models.IntegerField(unique=False,default=0)

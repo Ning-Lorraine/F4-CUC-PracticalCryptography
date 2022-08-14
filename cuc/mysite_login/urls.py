@@ -38,6 +38,17 @@ urlpatterns = [
     url(r'^list/', views.list),
     url(r'^delete/', views.delete),
     url(r'^download/', views.download),
+    url(r'^login_download/', views.login_download),
+    url(r'^logout_download/', views.logout_download),
+    url(r'^logout_download_file/', views.logout_download_file),
+    url(r'^handle_logout_download_file/', views.handle_logout_download_file),
+    url(r'^download_hash/', views.download_hash),
+    url(r'^share/', views.share),
+    url(r'^share_choose/', views.share_choose),
+    url(r'^share_file_num/', views.share_file_num),
+    url(r'^share_file_time/', views.share_file_time),
+    url(r'^get_share_url_time/', views.get_share_url_time),
+    url(r'^get_share_url_num/', views.get_share_url_num),
     url(r'^captcha', include('captcha.urls')) , # 增加这一行
     url(r'',views.login),
 ]

@@ -13,6 +13,7 @@ pynacl = "*"
 django-extensions = "*"
 django-werkzeug-debugger-runserver = "*"
 pyopenssl = "*"
+clipboard = "*"
 
 [dev-packages]
 

@@ -8,9 +8,9 @@
     {% if request.session.is_login %}
     <h1>你好,{{ request.session.user_name }}！<br>欢迎回来！</h1>
     <br><br>
-    <form class='form-upload' action="/list/" method="post">
+    <form class='form-upload' action="/upload/" method="post">
         {% csrf_token %}
-        <button onclick="window.location.href='/list'" class="btn btn-default pull-left">上传文件</button>
+        <button onclick="window.location.href='/upload'" class="btn btn-default pull-left">上传文件</button>
     </form>
     <form class='form-download' action="/download/" method="post">
         {% csrf_token %}

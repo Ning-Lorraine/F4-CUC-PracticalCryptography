@@ -22,9 +22,15 @@ class RegisterForm(forms.Form):
 
 
 
+
 class FileForm(forms.Form):
     username=forms.CharField(label='自定义姓名')
     avatar = forms.FileField(label="文件")
+
+class KeyForm(forms.Form):
+    keynumber=forms.CharField(label='用户输入提取码')
+
+
 
 
 

@@ -1,0 +1,39 @@
+{#login/templates/login/upload.html#}
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}下载文件{% endblock %}
+{% block css %}
+    <link rel="stylesheet" href="{% static 'css/login.css' %}">
+{% endblock %}
+{{% block content %}
+    <div class="container">
+        <div class="panel panel-default">
+            <table class="table table-bordered">
+                <thread>
+                <tr>
+                    <!-- <th>id</th> -->
+                    <th>文件备注</th>
+                    <th>文件名</th>
+                    <th>文件大小</th>
+                    <th>sha256</th>
+                    <th>上传时间</th>
+                    <th>操作</th>
+                </tr>
+                </thread>
+                <tbody>
+                    <tr>
+                        <td>{{user.custom_filename}}</td>
+                        <td>{{user.filename}}</td>
+                        <td>{{user.size}}</td>
+                        <td>{{user.sha256}}</td>
+                        <td>{{user.create_time}}</td>        
+                        <td>
+                            <a class="btn btn-primary btn-xs" href="/handle_logout_download_file/?custom_filename={{user.custom_filename}}">下载加密文件</a>
+                            <a class="btn btn-primary btn-xs" href="/download_hash/?custom_filename={{user.custom_filename}}">校验散列值</a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}
