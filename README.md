@@ -84,7 +84,7 @@
   sudo docker-compose up -d
   ```
 
-- 打开浏览器访问： https://pan.cuc.com，即可快速体验系统所有功能。
+- 打开浏览器访问：[https://pan.cuc.com]，即可快速体验系统所有功能。
 
 ## 附录
 
@@ -96,3 +96,4 @@
   ![](img/root.png)
 
   ![](img/intermedia.png)
+
