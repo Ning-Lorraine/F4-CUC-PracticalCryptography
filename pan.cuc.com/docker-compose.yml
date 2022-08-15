@@ -1,0 +1,47 @@
+version: "3"
+services:
+  app:
+    restart: always
+    build: .
+    extra_hosts:
+      - "pan.cuc.com:127.0.0.1"
+    command: bash -c "python3 manage.py migrate && python3 manage.py runserver_plus 0.0.0.0:443 --cert ./cert/app.crt --key ./cert/app.key"
+    networks:
+      - overlay
+    volumes:
+      - .:/code
+    ports:
+      - "443:443"
+    depends_on:
+      - db
+    environment:
+      DB_HOST: "db"
+      DB_USER: "root"
+      DB_PSW: "123456"
+      DB_SCHEMA: "django"
+      HTTPS_HOST: "pan.cuc.com"
+      HTTPS_PORT: 443
+      IS_DEUBG: "True"
+      SSL_PUB: "app.crt"
+      SSL_PRIV: "app.key"
+      TOKEN_EXPIRED: 600
+      STORAGE_PATH: "storage/"
+      ALLOWED_SUFFIX: "'jpg', 'jpeg', 'png', 'bmp', 'gif', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'pdf'"
+      NACL_SK_PATH: "config/nacl_sk"
+  db:
+    image: mysql:5.7
+    command:
+      - mysqld
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    networks:
+      - overlay
+    ports:
+      - "3306:3306"
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=123456
+      - MYSQL_DATABASE=django
+
+networks:
+  overlay:

@@ -1,0 +1,21 @@
+asgiref==3.5.2
+backports.zoneinfo==0.2.1; python_version < '3.9'
+cffi==1.15.1
+clipboard==0.0.4
+config==0.5.1
+cryptography==37.0.4
+django-extensions==3.2.0
+django-ranged-response==0.2.0
+django-simple-captcha==0.5.17
+django-werkzeug-debugger-runserver==0.3.1
+django==4.0.6
+markupsafe==2.1.1
+pillow==9.2.0
+pycparser==2.21
+pymysql==1.0.2
+pynacl==1.5.0
+pyopenssl==22.0.0
+pyperclip==1.8.2
+six==1.16.0
+sqlparse==0.4.2
+werkzeug==2.2.2
