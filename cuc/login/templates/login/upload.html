@@ -4,6 +4,22 @@
 {% block title %}上传文件{% endblock %}
 {% block css %}
     <link rel="stylesheet" href="{% static 'css/login.css' %}">
+    <style type="text/css">
+        .fileButton {
+            height: 30px;
+            line-height: 30px;
+            border-radius: 3px;
+            background-color: #3d8fbe;
+            color: #fff;
+            font-weight: 400;
+            display: inline-block;
+            padding: 0 10px;
+            cursor: pointer;
+          }
+        
+    </style>
+    
+      
 {% endblock %}
 {{% block content %}
     <div class="container">
@@ -18,11 +34,27 @@
                         {% endif %}
                         {{uf}}
                         {% csrf_token %}
+                        <input type="text" hidden name="user" value="{{ request.session.user_name }}"/>
                         <input type="text" name="username">
                         <!-- <span>{{message}}</span> -->
-                        <input type="file" name="avatar">
-                        <input type="text" name="user" hidden value="{{request.session.user_name}}"/>
-                        <input type="submit" value="上传"/>
+                        <!-- <input type="file" name="avatar">  -->
+                        <br>
+                        <br>
+                        <label for="file" style="position: absolute;">
+                            <div class="fileButton">选择文件</div>
+                        </label>
+                        <div class ="text-center">
+                        
+                            <input type="file"
+                                    id="file"
+                                    style="margin-left:3px;color:rgb(103, 103, 103);"
+                                    name="avatar"
+                                    />
+                        </div>
+                        <div class="text-center">
+                            <br>
+                            <input type="submit" class="btn btn-primary pull-left" value="上传" />
+                        </div>
                     </form>
                 {% else %}
                     <h1>你尚未登录，不可以访问哦！</h1>

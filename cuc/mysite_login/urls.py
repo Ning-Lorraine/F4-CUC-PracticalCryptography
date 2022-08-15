@@ -28,6 +28,8 @@ from django.urls import re_path as url,include
 # from django.conf.urls import url（不同）
 from login import views
 
+from django_otp.admin import OTPAdminSite
+
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^index/', views.index),
@@ -36,8 +38,10 @@ urlpatterns = [
     url(r'^logout/', views.logout),
     url(r'^upload/', views.upload),
     url(r'^list/', views.list),
+    url(r'^qrcode/',views.to_qrcode,name="qrcodee"),
     url(r'^delete/', views.delete),
     url(r'^download/', views.download),
+    url(r'^sign_list/', views.sign_list),
     url(r'^login_download/', views.login_download),
     url(r'^logout_download/', views.logout_download),
     url(r'^logout_download_file/', views.logout_download_file),
