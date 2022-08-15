@@ -1,5 +1,4 @@
 # login/views.py
- 
 from django.shortcuts import render,redirect
 from . import models
 from .forms import UserForm,RegisterForm,FileForm,KeyForm
@@ -8,10 +7,18 @@ import re
 from django.contrib.auth.hashers import make_password, check_password
 #from .models import User
 import hashlib
-from django.http import HttpResponse
-from nacl.encoding import Base64Encoder
+import nacl.secret
+import nacl.utils
+from nacl.encoding import HexEncoder
+from nacl.signing import VerifyKey
 from nacl.signing import SigningKey
-from cryptography.fernet import Fernet
+from django.http import StreamingHttpResponse
+from django.utils.encoding import escape_uri_path
+from django.views.decorators.csrf import csrf_exempt
+import pickle
+import random
+import getpass
+
  
 def index(request):
     pass
@@ -96,6 +103,16 @@ def register(request):
                     return render(request, 'login/register.html', locals())
  
                 # 当一切都OK的情况下，创建新用户
+
+                signing_key = SigningKey.generate()
+                verify_key = signing_key.verify_key
+
+                
+                #序列化公钥以发给第三方
+                signing_key_bytes = signing_key.encode(encoder=HexEncoder)
+                # print(signing_key_bytes,type(signing_key_bytes))
+                verify_key_bytes = verify_key.encode(encoder=HexEncoder)
+
  
                 new_user = models.User.objects.create()
                 new_user.name = username
@@ -105,6 +122,8 @@ def register(request):
                 new_user.password = make_password(password1,new_user.salt,'pbkdf2_sha256')  # 使用加密密码
                 new_user.email = email
                 #new_user.sex = sex
+                new_user.public_key = verify_key_bytes
+                new_user.secret_key = signing_key_bytes
                 new_user.save()
                 return redirect('/login/')  # 自动跳转到登录页面
     register_form = RegisterForm()
@@ -116,45 +135,40 @@ def logout(request):
     request.session.flush()
     return redirect('/index/')
 
-#def hash_code(s, salt='mysite_login'):
-#    h = hashlib.sha256()
-#    s += salt
-#    h.update(s.encode())  # update方法只接收bytes类型
-#    return h.hexdigest()
 
 
-def handle_upload_file(file,userfile):
+def handle_upload_file(file,userfile,notes):
     content = b''
 
     #生成会话密钥
-    userfile.enckey = Fernet.generate_key()
-    key = Fernet(userfile.enckey)
-
-    #生成用户私钥、公钥
-    signing_key = SigningKey.generate()
-    verify_key = signing_key.verify_key
+    s_key = nacl.utils.random(nacl.secret.SecretBox.KEY_SIZE)
+    s_key_string=str(s_key,encoding='ISO-8859-1')
+    # print('********encode**********',len(s_key_string),type(s_key_string),s_key_string)
+    key = nacl.secret.SecretBox(s_key)
+    # key_64=key.encode(encoder=Base64Encoder)
+    # nonce = nacl.utils.random(nacl.secret.SecretBox.NONCE_SIZE)
     
-    #序列化公钥以发给第三方
-    verify_key_b64 = verify_key.encode(encoder=Base64Encoder)
-
-    # 公钥私钥存储
-
-    models.Key.objects.create(
-        public_key = signing_key,
-        secret_key = verify_key_b64,
-    )
-
-    # file_object=request.FILES.get('avatar')
-    with open('./static/files/'+file.name,mode='wb') as f:
+    # 加密存储
+    with open('./static/files/'+file.name,mode='wb') as f:    
         for chunk in file.chunks():
-            content += chunk
-            # 先使用对称密钥加密，然后使用用户私钥签名存储
+            content+= chunk
             c = key.encrypt(chunk)
-            signed_b64 = signing_key.sign(b"c", encoder=Base64Encoder)
-            f.write(signed_b64)
-    # passlib中sha256输入最长为4096个字符，还没想到好的文件哈希方法，先前截取4096位
-    # userfile.sha256 = sha256_crypt.hash(str(content)[0:4096])  # str1.encode('utf-8')
+            # d=key.decrypt(c)
+        pickle.dump(c, f)
+            # f.write(d) 
+    file_sha256 = hashlib.sha256(str(c).encode('utf-8')[0:4096]).hexdigest()
+    print(file_sha256)
+    models.Key.objects.create(
+        filename=notes,
+        session_key=s_key_string,
+        en_sha256=file_sha256,
+        # public_key = signing_key,
+        # secret_key = verify_key_b64,
+    )
+    # d=key.decrypt(c)
+    # print(d.decode('utf-8'))
     f.close()
+    return (key)
 
 
 import random
@@ -227,16 +241,17 @@ def upload(request):
                     f.write(chunk)
                 file_sha256 = hashlib.sha256(str(content).encode('utf-8')[0:4096]).hexdigest()
                 # f.close()
-                
+                # username=str(request.user.username)
+                # print(username)
                 file = models.File.objects.create(
                     custom_filename=form.cleaned_data['username'],
-                    # username=request.session['user_name'],
+                    user_name=request.POST.get('user'),
                     filename=file_object.name,
                     size=file_object.size,
                     sha256 = file_sha256,
                     keynumber = str(createRandomString(6))
                 ) 
-                handle_upload_file(file_object,file)
+                handle_upload_file(file_object,file,file_name)
             # file.username = request.session['user_name']
             # file.filename = request.FILES['filename'].name
             # file.size = request.FILES['filename'].size
@@ -248,12 +263,36 @@ def upload(request):
 
 
 
+def sign_list(request):   
+    queryset=models.User.objects.all()
+    for obj in queryset:
+        print(obj.name,obj.public_key,obj.secret_key)
+    return render(request,'login/sign_list.html',{'queryset':queryset})
+
+
+
+def sign(request):
+    nid=request.GET.get('nid')
+    queryset=models.User.objects.filter(id=nid)
+    sha_queryset=models.Key.objects.values('en_sha256')
+    for obj in queryset:
+        p_key=obj.public_key
+        s_key=obj.secret_key
+        # for sha_obj in sha_queryset:
+
+    # return render(request,'login/sign_list.html',{'queryset':queryset})
+    return HttpResponse('签名成功！')
+
 
 def list(request):
     queryset=models.File.objects.all()
-
+    # queryset_user=models.User.objects.all()
     for obj in queryset:
-        print(obj.user_name,obj.custom_filename,obj.filename,obj.size,obj.sha256,obj.create_time,obj.keynumber)
+        obj.user_name,obj.custom_filename,obj.filename,obj.size,obj.sha256,obj.create_time,obj.keynumber
+    # for obj in queryset_user:
+    #     obj.name
+    # name=request.session.get('_auth_user_id')
+    # print(name)
     return render(request,'login/list.html',{'queryset':queryset})
 
 def delete(request):
@@ -266,7 +305,7 @@ def download(request):
     queryset=models.File.objects.all()
 
     for obj in queryset:
-        print(obj.user_name,obj.custom_filename,obj.filename,obj.size,obj.sha256,obj.create_time)
+        obj.user_name,obj.custom_filename,obj.filename,obj.size,obj.sha256,obj.create_time
     return render(request,'login/download.html',{'queryset':queryset})
 
 # 下载需要引入的库
@@ -277,18 +316,46 @@ from django.utils.encoding import escape_uri_path
 
 # 提交时csrf报错
 from django.views.decorators.csrf import csrf_exempt
-@csrf_exempt
 
+def file_iterator(filename,chunk_size,s_key):
+    s_key=bytes(s_key,encoding='ISO-8859-1')
+    # print('***********decode*********',len(s_key),type(s_key),s_key)
+    key = nacl.secret.SecretBox(s_key)
+    # nonce = nacl.utils.random(nacl.secret.SecretBox.NONCE_SIZE)
+    with open(filename,'rb') as f:
+        while True:
+            # c=f.read(chunk_size)
+            c=pickle.load(f)
+            text=key.decrypt(c)
+            # for chunk in filename.chunks():
+            #     content+= chunk
+            #     text=key.decrypt(chunk)
+            #     f.write(text.decode('utf-8')) 
+            if c:
+                yield text
+            else:
+                break
+    f.close()
+            
+@csrf_exempt
 def login_download(request):
-    filename = request.GET.get('file')
-    filepath = os.path.join('./static/files/', filename)
-    fp = open(filepath, 'rb')
-    response = StreamingHttpResponse(fp)
-    # response = FileResponse(fp)
-    response['Content-Type'] = 'application/octet-stream'
-    response['Content-Disposition'] = 'attachment;filename="%s"' % escape_uri_path(filename)
-    return response
-    fp.close()
+    nid=request.GET.get('nid')
+    queryset=models.File.objects.filter(id=nid)
+    for obj in queryset:
+        filename=obj.filename
+        comment=obj.custom_filename
+        filepath = os.path.join('./static/files/',str(filename))
+        print(filepath)
+        filesize=models.File.objects.get(custom_filename=comment).size
+        # filesize=models.File.objects.get(custom_filename=comment).size
+        key=models.Key.objects.get(filename=comment).session_key
+        response = StreamingHttpResponse(file_iterator(filepath,filesize,key))
+        # response = FileResponse(fp)
+        response['Content-Type'] = 'application/octet-stream'
+        response['Content-Disposition'] = "attachment;filename*=utf-8''{}".format(escape_uri_path(str(filename)))
+        return response
+        fp.close()
+
 
 import clipboard
 import pyperclip
@@ -321,18 +388,40 @@ def logout_download_file(request):
         return render(request, 'logout/verify.html',{'message':message,'custom_filename':custom_filename})
 
 
+def logout_file_iterator(filename,chunk_size,s_key):
+    s_key=bytes(s_key,encoding='ISO-8859-1')
+    # print('***********decode*********',len(s_key),type(s_key),s_key)
+    key = nacl.secret.SecretBox(s_key)
+    # nonce = nacl.utils.random(nacl.secret.SecretBox.NONCE_SIZE)
+    with open(filename,'rb') as f:
+        while True:
+            # c=f.read(chunk_size)
+            c=pickle.load(f)
+            text=key.decrypt(c)
+            # for chunk in filename.chunks():
+            #     content+= chunk
+            #     text=key.decrypt(chunk)
+            #     f.write(text.decode('utf-8')) 
+            if c:
+                yield text
+            else:
+                break
+    f.close()
 
 def handle_logout_download_file(request):
     custom_filename = request.GET.get('custom_filename')
     user = models.File.objects.get(custom_filename=custom_filename)
     filename = user.filename
-    # print(filename)
+    filesize=user.size
+    key=models.Key.objects.get(filename=custom_filename).session_key
     filepath = os.path.join('./static/files/', str(filename))
     fp = open(filepath, 'rb')
-    response = StreamingHttpResponse(fp)
+    # response = StreamingHttpResponse(fp)
+    response = StreamingHttpResponse(logout_file_iterator(filepath,filesize,key))
     # response = FileResponse(fp)
     response['Content-Type'] = 'application/octet-stream'
-    response['Content-Disposition'] = 'attachment;filename="%s"' % escape_uri_path(str(filename))
+    # response['Content-Disposition'] =  "attachment;filename*=utf-8''{}" % escape_uri_path(str(filename))
+    response['Content-Disposition'] = "attachment;filename*=utf-8''{}".format(escape_uri_path(str(filename)))
     return response
     fp.close()
     

@@ -33,11 +33,17 @@
                 </tr>
                 </thread>
                 <tbody>
+                {% for obj in queryset_user %}
+                    <tr>
+                        <td>{{obj.name}}</td>
+                    </tr>
+                {% endfor %}
                 {% for obj in queryset %}
                     <tr>
                         <!-- <th>{{obj.id}}</th> -->
-                        <td>{{request.session.user_name}}</td>
+                        <td>{{obj.user_name}}</td>
                         <td>{{obj.custom_filename}}</td>
+                        <!-- <td>{{obj.custom_filename}}</td> -->
                         <td>{{obj.filename}}</td>
                         <td>{{obj.size}}</td>
                         <td>{{obj.sha256}}</td>
@@ -45,13 +51,11 @@
                         <td>{{obj.keynumber}}</td>
                         <td>
                         {% if request.session.is_login %}
-                            <a class="btn btn-primary btn-xs" href="/login_download/?file={{obj.filename}}">下载</a>
+                            <a class="btn btn-primary btn-xs" href="/login_download/?nid={{obj.id}}">下载</a>
                             <a class="btn btn-success btn-xs" href="/share/?file={{obj.filename}}">分享</a>
                             <a class="btn btn-danger btn-xs" href="/delete/?nid={{obj.id}}">删除</a>
                         {% else %}
-            
-                            <a class="btn btn-primary btn-xs" href="/logout_download/?custom_filename={{obj.custom_filename}}">下载</a>
-                           
+                            <a class="btn btn-primary btn-xs" href="/logout_download/?custom_filename={{obj.custom_filename}}">下载</a>                      
                         {% endif %}
                         </td>
                     </tr>

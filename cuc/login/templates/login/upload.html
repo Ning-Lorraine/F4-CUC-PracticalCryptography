@@ -21,6 +21,7 @@
                         <input type="text" name="username">
                         <!-- <span>{{message}}</span> -->
                         <input type="file" name="avatar">
+                        <input type="text" name="user" hidden value="{{request.session.user_name}}"/>
                         <input type="submit" value="上传"/>
                     </form>
                 {% else %}
