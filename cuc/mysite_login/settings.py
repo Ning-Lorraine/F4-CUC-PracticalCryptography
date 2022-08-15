@@ -44,6 +44,9 @@ INSTALLED_APPS = [
     'login',   #注册app
     'captcha',
     'static',
+
+    'django_otp',
+    'django_otp.plugins.otp_totp',
 ]
 
 MIDDLEWARE = [
@@ -52,6 +55,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django_otp.middleware.OTPMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -97,7 +101,7 @@ DATABASES = {
         'USER':'root',          #账号
         # mysql
         # ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'root';
-        'PASSWORD':'123456',      #密码
+        'PASSWORD':'root123456',      #密码
         'HOST':'127.0.0.1',    #IP
         'PORT':'3306',                   #数据库端口
     }
