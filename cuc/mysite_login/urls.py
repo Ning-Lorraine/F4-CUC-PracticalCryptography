@@ -36,6 +36,8 @@ urlpatterns = [
     url(r'^logout/', views.logout),
     url(r'^upload/', views.upload),
     url(r'^list/', views.list),
+    url(r'^signature/',views.signature),
+    url(r'^logout_download_need_key/',views.logout_download_need_key),
     url(r'^delete/', views.delete),
     url(r'^download/', views.download),
     url(r'^sign_list/', views.sign_list),

@@ -263,20 +263,22 @@ def upload(request):
 
 
 def sign_list(request):   
-    queryset=models.User.objects.all()
-    for obj in queryset:
-        print(obj.name,obj.public_key,obj.secret_key)
-    return render(request,'login/sign_list.html',{'queryset':queryset})
+    # obj=models.User.objects.all()
+    if request.session.get('is_login', None):
+        nid=request.session.get('user_id', None)
+        username=models.User.objects.get(id=nid).name
+        secret_key=models.User.objects.get(name=username).secret_key
+        public_key=models.User.objects.get(name=username).public_key
+        return_dic = {
+            'name': username,
+            'p_key': public_key,
+            's_key': secret_key,
+        }
+        return render(request,'login/sign_list.html',return_dic)
+    else:
+        queryset=models.User.objects.all()
+        return render(request,'login/sign_list.html',{'queryset':queryset})
 
-def sign(request):
-    nid=request.GET.get('nid')
-    queryset=models.User.objects.filter(id=nid)
-    sha_queryset=models.Key.objects.values('en_sha256')
-    for obj in queryset:
-        p_key=obj.public_key
-        s_key=obj.secret_key
-    # return render(request,'login/sign_list.html',{'queryset':queryset})
-    return HttpResponse('签名成功！')
 
 def list(request):
     queryset=models.File.objects.all()
@@ -409,6 +411,65 @@ def handle_logout_download_file(request):
     # print(file_sha256)
     # print(type(file_sha256))
 
+    # 调取对应加密文件
+    filepath = os.path.join('./static/files/', str(filename))
+    # print("-------- path ----",filepath)
+    content = b''  
+    with open(filepath,'rb') as f:
+        c = pickle.load(f)
+        content += c
+     
+    # 对加密文件进行hash计算散列值
+    fp_sha256 = hashlib.sha256(str(content).encode('utf-8')[0:4096]).hexdigest()
+    # print("sha~~~~~~~~~~~~~~~~~~~~fp256:::")
+    # print(fp_sha256)
+    # print(type(fp_sha256))
+
+    # 对比
+    if file_sha256 != fp_sha256 :
+        response = StreamingHttpResponse(fp)
+        response['Content-Type'] = 'application/octet-stream'
+        response['Content-Disposition'] = "attachment;filename*=utf-8''{}".format(escape_uri_path(str(filename)))
+        return response
+        fp.close()
+        # return HttpResponse("数字签名验证失败，文件可能存在安全隐患，未提供解密文件！")
+    elif file_sha256 == fp_sha256 :
+        key=models.Key.objects.get(filename=custom_filename).session_key  # 获得会话密钥
+        response = StreamingHttpResponse(logout_file_iterator(filepath,filesize,key))  # 解密
+        response['Content-Type'] = 'application/octet-stream'
+        response['Content-Disposition'] = "attachment;filename*=utf-8''{}".format(escape_uri_path(str(filename)))
+        return response
+        fp.close()
+
+
+def logout_download_need_key(request):
+    custom_filename = request.POST.get('custom_filename')
+    user = models.File.objects.get(custom_filename=custom_filename)  # 获得用户数据
+    filename = user.filename
+    filesize = user.size
+    username = user.user_name
+    
+    # 输入的公钥
+    public_key_str = request.POST.get('pubilckey')
+
+    pubilc_key_bytes = bytes(public_key_str,encoding='ISO-8859-1')
+    # print("*********************** publickey_b: ",len(pubilc_key_bytes),type(pubilc_key_bytes))
+    public_key = VerifyKey(pubilc_key_bytes,encoder=HexEncoder)   # 获得公钥
+    # print("*********************** publickey: ",type(public_key))
+
+    # 获得数字签名
+    sign_str = models.Key.objects.get(filename=custom_filename).sign
+    sign = bytes(sign_str,encoding='ISO-8859-1')
+    # print(sign,len(sign),type(sign))
+
+    # 解密数字签名
+    try:
+        file_sha256 = public_key.verify(sign,encoder=HexEncoder)
+    except:
+        message = '数字签名验证失败，可能是公钥输入错误，不下载文件。'
+        return render(request,'logout/signature.html',{'message':message})
+
+    file_sha256 = str(file_sha256,encoding='ISO-8859-1')
     # 调取对应加密文件
     filepath = os.path.join('./static/files/', str(filename))
     # print("-------- path ----",filepath)
@@ -636,6 +697,10 @@ def get_share_url_num(request):
         # return HttpResponse("分享链接已超过访问次数！")
         return render(request,'login/get_share_url.html',{'user':user,'url':url,'token':token,'mark':mark,'flag':flag})
 
+def signature(request):
+    custom_filename=request.GET.get('custom_filename')
+    user = models.File.objects.get(custom_filename=custom_filename)
+    return render(request, 'logout/signature.html',{'custom_filename':custom_filename})
 
 
 
