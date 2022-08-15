@@ -14,9 +14,6 @@ django-extensions = "*"
 django-werkzeug-debugger-runserver = "*"
 pyopenssl = "*"
 clipboard = "*"
-pyotp = "*"
-django-otp = "*"
-qrcode = "*"
 
 [dev-packages]
 

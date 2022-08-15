@@ -21,18 +21,10 @@ import time
 import base64
 import hmac
 
-# QRCODE
-import base64
-import pyotp 
-import qrcode
-from urllib.parse import urlencode
 
 def index(request):
     pass
     return render(request,'login/index.html')
-
-def to_qrcode(request):
-    return render(request,'login/qrcode.html')
  
 def login(request):
     #判断登陆状态
@@ -45,19 +37,14 @@ def login(request):
         if login_form.is_valid():
             username = login_form.cleaned_data['username']
             password = login_form.cleaned_data['password']
-            qrcode = login_form.cleaned_data['qrcode']  ##qrcode
             try:
                 user = models.User.objects.get(name=username)
                 # 哈希对比
                 if check_password(password,user.password):  # 哈希值和数据库内的值进行比对
-                    totp = pyotp.TOTP(user.otp_secret_key)  ##QRCODE
-                    if totp.verify(qrcode):   #QRCODE
-                        request.session['is_login'] = True
-                        request.session['user_id'] = user.id
-                        request.session['user_name'] = user.name
-                        return redirect('/index/')
-                    else:
-                        message = "OTP认证失败"
+                    request.session['is_login'] = True
+                    request.session['user_id'] = user.id
+                    request.session['user_name'] = user.name
+                    return redirect('/index/')
                 else:
                     message = "密码不正确！"
             except:
@@ -130,21 +117,6 @@ def register(request):
                 verify_key_bytes = verify_key.encode(encoder=HexEncoder)
                 verify_key_str = str(verify_key_bytes,encoding='ISO-8859-1')   #bytes转换为string
 
-                ################################# QRCODE
-                otp_secret_key = pyotp.random_base32()
-                totp = pyotp.TOTP(otp_secret_key)    # TOTP必须大写
-                # 获取二维码 URI
-                qr_url = pyotp.totp.TOTP(otp_secret_key,digits=6,digest=hashlib.sha256,interval=30).provisioning_uri(username)
-                qr_url = qr_url + "&" + urlencode({
-                    "digits": 6,
-                    "interval": 30
-                })
-                # #返还给code.html页面
-                #生成二维码并存储 
-                img = qrcode.make(qr_url).save('./static/code/code.png')
-                #################################### OVER QRCODE
-
-                # 创建用户
                 new_user = models.User.objects.create()
                 new_user.name = username
                 # 加盐
@@ -154,12 +126,8 @@ def register(request):
                 new_user.email = email
                 new_user.public_key = verify_key_str
                 new_user.secret_key = signing_key_str
-                #存储code值 ENCODE
-                new_user.otp_secret_key = otp_secret_key
                 new_user.save()
-                # return redirect('/login/')  # 自动跳转到登录页面  ###QRCODE
-                return render(request,"login/qrcode.html",{"qr_url":qr_url})  ##QRCODE
-
+                return redirect('/login/')  # 自动跳转到登录页面
     register_form = RegisterForm()
     return render(request, 'login/register.html', locals())
  
@@ -240,12 +208,13 @@ def upload(request):
             if file_object.size>10*1024*1024:
                 message = '文件过大! 请选择10MB以下的文件。'
                 return render(request,'login/upload.html',locals())
+
             ftype = ['.jpg', '.png', '.jpeg', '.bmp', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx']
 
             if os.path.splitext(file_object.name)[1] not in ftype:
                 message = '不支持的文件类型，仅支持jpg/jpeg/png/bmp以及office文件。'
                 return render(request,'login/upload.html',locals())
-              
+                # return HttpResponse("不支持的文件类型，仅支持jpg/jpeg/png/bmp以及office文件。")
 
             
             file_name=form.cleaned_data['username']
@@ -372,8 +341,6 @@ def login_download(request):
         fp.close()
 
 
-import clipboard
-import pyperclip
 
 def logout_download(request):
     custom_filename=request.GET.get('custom_filename')
@@ -664,9 +631,9 @@ def get_share_url_num(request):
     if check_num_token(token,remain_numbers):
         return render(request,'login/get_share_url.html',{'user':user,'url':url,'token':token})
     else:
-        # return HttpResponse("分享链接已超过访问次数！")
         mark=1
         flag=0
+        # return HttpResponse("分享链接已超过访问次数！")
         return render(request,'login/get_share_url.html',{'user':user,'url':url,'token':token,'mark':mark,'flag':flag})
 
 
