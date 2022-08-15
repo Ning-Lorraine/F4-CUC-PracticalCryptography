@@ -238,11 +238,14 @@ def upload(request):
             content=b''
             print(form.cleaned_data)
             if file_object.size>10*1024*1024:
-                return HttpResponse("文件过大! 请选择10MB以下的文件。")
+                message = '文件过大! 请选择10MB以下的文件。'
+                return render(request,'login/upload.html',locals())
             ftype = ['.jpg', '.png', '.jpeg', '.bmp', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx']
 
             if os.path.splitext(file_object.name)[1] not in ftype:
-                return HttpResponse("不支持的文件类型，仅支持jpg/jpeg/png/bmp以及office文件。")
+                message = '不支持的文件类型，仅支持jpg/jpeg/png/bmp以及office文件。'
+                return render(request,'login/upload.html',locals())
+              
 
             
             file_name=form.cleaned_data['username']
