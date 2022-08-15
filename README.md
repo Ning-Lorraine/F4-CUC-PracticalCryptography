@@ -14,8 +14,7 @@
   - [x] 使用合法用户名和口令登录系统
   - [x] 禁止使用明文存储用户口令 【 PBKDF2 散列算法 慢速散列 针对散列算法（如MD5、SHA1等）的攻击方法】
     - 存储的口令即使被公开，也无法还原/解码出原始明文口令
-  - [ ] （可选）双因素认证 （半成品代码）
-    - OTP: Google Authenticator  ( Authenticator )
+   
 - 基于网页的文件上传加密与数字签名系统（20分）
   - [x] 已完成《基于网页的用户注册与登录系统》所有要求
   - [x] 限制文件大小：小于 10MB
@@ -23,6 +22,7 @@
   - [x] 匿名用户禁止上传文件
   - [x] 对文件进行对称加密存储到文件系统，禁止明文存储文件 【 对称加密 密钥管理（如何安全存储对称加密密钥） 对称加密密文的PADDING问题 】
   - [x] 系统对加密后文件进行数字签名 【 数字签名（多种签名工作模式差异） 】
+
 - 基于网页的加密文件下载与解密（20分）
   - [x] 已完成《基于网页的文件上传加密与数字签名系统》所有要求
   - [x] 提供匿名用户加密后文件和关联的数字签名文件的下载
@@ -44,14 +44,30 @@
 
 - 使用MySQL 8.0数据库
 
+## 密码学理论与技术示范应用要点说明
+| 密码学理论   | 技术应用 |   技术示范 |作用|
+| :------------- | :----------: | :----------: | :----------: | 
+|盐值加密 | pbkdf2 | 用户口令加密 |增加密码安全性|
+|  对称密钥|   nacl.secret   |  加密文件 | 存储加密文件防止明文被获取 |
+| 非对称密钥  |    nacl.signing   | 数字签名|匿名用户验证分享链接用户身份|
+|哈希摘要|hashlib|生成文件哈希值|验证下载的明文是否经过篡改|
+|哈希摘要|md5|生成token消息摘要|实现散列值校验|
+|证书|x.509|配置https|识别网页身份，保护数据传输安全|
+
 ## 快速上手体验
 
-- 安装数据库，docker-compose环境依赖
+- 下载环境依赖并运行
+
+  ```bash
+  pipenv install
+  pipenv shell
+  ```
+
+- 安装数据库
 
   ```bash
   sudo apt update
   sudo apt install mysql-server
-  sudo apt install docker-compose
   ```
 
 - 对Mysql root用户数据库权限进行设置
@@ -66,7 +82,7 @@
   #配置root
   update user set authentication_string='' where user='root'; 
   #为root设置密码
-  alter user 'root'@'localhost' identified with mysql_native_password by '123456（默认设置）';
+  alter user 'root'@'localhost' identified with mysql_native_password by '123456（自行设置）';
   
   #设置成功，退出
   quit;
@@ -75,25 +91,26 @@
   service mysql restart
   
   #新建数据库django
-  mysql>create database django DEFAULT CHARACTER SET utf8mb4;
+  mysql>create database django DEFAULT CHARACTER SET utf8;
   ```
 
-- 进入目录运行：
+- 运行
 
   ```bash
-  sudo docker-compose up -d
+  python manage.py runserver_plus
+  
+  python manage.py runserver_plus pan.cuc.com:8000 --cert app.crt --key-file app.key
   ```
 
-- 打开浏览器访问： [https://pan.cuc.com](https://pan.cuc.com) ，即可快速体验系统所有功能。
 
 ## 附录
 
-- 需要在主机与运行环境中添加127.0.0.1对应域名解析pan.cuc.com
-- 运行docker环境时请确保本地3306端口未被占用
-
-- 需要手动将cert目录下CARoot.crt，intermedia.crt证书添加至浏览器受信任的根证书，中间证书颁发机构列表，否则浏览器将视其为不安全连接
+- 手动将CARoot.crt，intermedia.crt证书添加至浏览器受信任的根证书，中间证书颁发机构列表，否则浏览器将视其为不安全连接
 
   ![](img/root.png)
 
   ![](img/intermedia.png)
+  
+- [仓库链接](https://github.com/Ning-Lorraine/F4-CUC-PracticalCryptography)
 
+- [视频链接](https://www.bilibili.com/video/BV1LB4y1L72s?spm_id_from=333.999.0.0&vd_source=b6b417005a6423397884b3002dba82fc) 
