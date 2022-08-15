@@ -36,7 +36,17 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="navbar-brand" href="#">Mysite</a>
+          
+          
+          <ul class="nav navbar-nav navbar-left"> 
+                <img src="/static/logo/logo.jpg" class="img-circle navbar-nav" style="width:22px">
+              
+                <a class="navbar-brand" href="/index/" >中传放心传</a>
+             
+          <!-- <img src="/static/logo/logo.jpg" class="img-circle" style="width:10px">
+          <a class="navbar-brand" href="/index/" >中传放心传</a> -->
+          </ul>
+          
         </div>
  
         <!-- Collect the nav links, forms, and other content for toggling -->
@@ -49,11 +59,15 @@
             </ul>
             <ul class="nav navbar-nav navbar-right">
                 {% if request.session.is_login %}
-                    <li><a href="#">当前在线：{{ request.session.user_name }}</a></li>
-                    <li><a href="/logout/">登出</a></li>
+                 
+                    <li><a href="/index/"><span class="glyphicon glyphicon-user"></span> 当前在线：{{ request.session.user_name }}</a></li>
+                    <li><a href="/logout/"><span class="glyphicon glyphicon-log-out"></span> 登出</a></li>
+                    
                 {% else %}
-                    <li><a href="/login/">登录</a></li>
-                    <li><a href="/register/">注册</a></li>
+                
+                  <li><a href="/login/"><span class="glyphicon glyphicon-log-in"></span> 登录</a></li>
+                  <li><a href="/register/"><span class="glyphicon glyphicon-plus"></span> 注册</a></li>  
+              
                 {% endif %}
             </ul>
           </div><!-- /.navbar-collapse -->

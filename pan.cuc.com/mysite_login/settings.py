@@ -97,7 +97,7 @@ DATABASES = {
         'USER':'root',          #账号
         # mysql
         # ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'root';
-        'PASSWORD':'root123456',      #密码
+        'PASSWORD':'123456',      #密码
         'HOST':'127.0.0.1',    #IP
         'PORT':'3306',                   #数据库端口
     }
@@ -155,4 +155,12 @@ STATICFILES_DIRS = [
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+PASSWORD_HASHERS = [
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+    'django.contrib.auth.hashers.Argon2PasswordHasher',
+    'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
+    'django.contrib.auth.hashers.ScryptPasswordHasher',
+]
+RUNSERVERPLUS_SERVER_ADDRESS_PORT = 'pan.cuc.com:8000'
 
