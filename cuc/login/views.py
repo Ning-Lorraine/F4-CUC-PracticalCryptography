@@ -21,18 +21,10 @@ import time
 import base64
 import hmac
 
-# QRCODE
-import base64
-import pyotp 
-import qrcode
-from urllib.parse import urlencode
 
 def index(request):
     pass
     return render(request,'login/index.html')
-
-def to_qrcode(request):
-    return render(request,'login/qrcode.html')
  
 def login(request):
     #判断登陆状态
@@ -45,19 +37,14 @@ def login(request):
         if login_form.is_valid():
             username = login_form.cleaned_data['username']
             password = login_form.cleaned_data['password']
-            qrcode = login_form.cleaned_data['qrcode']  ##qrcode
             try:
                 user = models.User.objects.get(name=username)
                 # 哈希对比
                 if check_password(password,user.password):  # 哈希值和数据库内的值进行比对
-                    totp = pyotp.TOTP(user.otp_secret_key)  ##QRCODE
-                    if totp.verify(qrcode):   #QRCODE
-                        request.session['is_login'] = True
-                        request.session['user_id'] = user.id
-                        request.session['user_name'] = user.name
-                        return redirect('/index/')
-                    else:
-                        message = "OTP认证失败"
+                    request.session['is_login'] = True
+                    request.session['user_id'] = user.id
+                    request.session['user_name'] = user.name
+                    return redirect('/index/')
                 else:
                     message = "密码不正确！"
             except:
@@ -130,21 +117,6 @@ def register(request):
                 verify_key_bytes = verify_key.encode(encoder=HexEncoder)
                 verify_key_str = str(verify_key_bytes,encoding='ISO-8859-1')   #bytes转换为string
 
-                ################################# QRCODE
-                otp_secret_key = pyotp.random_base32()
-                totp = pyotp.TOTP(otp_secret_key)    # TOTP必须大写
-                # 获取二维码 URI
-                qr_url = pyotp.totp.TOTP(otp_secret_key,digits=6,digest=hashlib.sha256,interval=30).provisioning_uri(username)
-                qr_url = qr_url + "&" + urlencode({
-                    "digits": 6,
-                    "interval": 30
-                })
-                # #返还给code.html页面
-                #生成二维码并存储 
-                img = qrcode.make(qr_url).save('./static/code/code.png')
-                #################################### OVER QRCODE
-
-                # 创建用户
                 new_user = models.User.objects.create()
                 new_user.name = username
                 # 加盐
@@ -154,12 +126,8 @@ def register(request):
                 new_user.email = email
                 new_user.public_key = verify_key_str
                 new_user.secret_key = signing_key_str
-                #存储code值 ENCODE
-                new_user.otp_secret_key = otp_secret_key
                 new_user.save()
-                # return redirect('/login/')  # 自动跳转到登录页面  ###QRCODE
-                return render(request,"login/qrcode.html",{"qr_url":qr_url})  ##QRCODE
-
+                return redirect('/login/')  # 自动跳转到登录页面
     register_form = RegisterForm()
     return render(request, 'login/register.html', locals())
  
@@ -240,12 +208,13 @@ def upload(request):
             if file_object.size>10*1024*1024:
                 message = '文件过大! 请选择10MB以下的文件。'
                 return render(request,'login/upload.html',locals())
+
             ftype = ['.jpg', '.png', '.jpeg', '.bmp', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx']
 
             if os.path.splitext(file_object.name)[1] not in ftype:
                 message = '不支持的文件类型，仅支持jpg/jpeg/png/bmp以及office文件。'
                 return render(request,'login/upload.html',locals())
-              
+                # return HttpResponse("不支持的文件类型，仅支持jpg/jpeg/png/bmp以及office文件。")
 
             
             file_name=form.cleaned_data['username']
@@ -294,20 +263,22 @@ def upload(request):
 
 
 def sign_list(request):   
-    queryset=models.User.objects.all()
-    for obj in queryset:
-        print(obj.name,obj.public_key,obj.secret_key)
-    return render(request,'login/sign_list.html',{'queryset':queryset})
+    # obj=models.User.objects.all()
+    if request.session.get('is_login', None):
+        nid=request.session.get('user_id', None)
+        username=models.User.objects.get(id=nid).name
+        secret_key=models.User.objects.get(name=username).secret_key
+        public_key=models.User.objects.get(name=username).public_key
+        return_dic = {
+            'name': username,
+            'p_key': public_key,
+            's_key': secret_key,
+        }
+        return render(request,'login/sign_list.html',return_dic)
+    else:
+        queryset=models.User.objects.all()
+        return render(request,'login/sign_list.html',{'queryset':queryset})
 
-def sign(request):
-    nid=request.GET.get('nid')
-    queryset=models.User.objects.filter(id=nid)
-    sha_queryset=models.Key.objects.values('en_sha256')
-    for obj in queryset:
-        p_key=obj.public_key
-        s_key=obj.secret_key
-    # return render(request,'login/sign_list.html',{'queryset':queryset})
-    return HttpResponse('签名成功！')
 
 def list(request):
     queryset=models.File.objects.all()
@@ -372,8 +343,6 @@ def login_download(request):
         fp.close()
 
 
-import clipboard
-import pyperclip
 
 def logout_download(request):
     custom_filename=request.GET.get('custom_filename')
@@ -442,6 +411,65 @@ def handle_logout_download_file(request):
     # print(file_sha256)
     # print(type(file_sha256))
 
+    # 调取对应加密文件
+    filepath = os.path.join('./static/files/', str(filename))
+    # print("-------- path ----",filepath)
+    content = b''  
+    with open(filepath,'rb') as f:
+        c = pickle.load(f)
+        content += c
+     
+    # 对加密文件进行hash计算散列值
+    fp_sha256 = hashlib.sha256(str(content).encode('utf-8')[0:4096]).hexdigest()
+    # print("sha~~~~~~~~~~~~~~~~~~~~fp256:::")
+    # print(fp_sha256)
+    # print(type(fp_sha256))
+
+    # 对比
+    if file_sha256 != fp_sha256 :
+        response = StreamingHttpResponse(fp)
+        response['Content-Type'] = 'application/octet-stream'
+        response['Content-Disposition'] = "attachment;filename*=utf-8''{}".format(escape_uri_path(str(filename)))
+        return response
+        fp.close()
+        # return HttpResponse("数字签名验证失败，文件可能存在安全隐患，未提供解密文件！")
+    elif file_sha256 == fp_sha256 :
+        key=models.Key.objects.get(filename=custom_filename).session_key  # 获得会话密钥
+        response = StreamingHttpResponse(logout_file_iterator(filepath,filesize,key))  # 解密
+        response['Content-Type'] = 'application/octet-stream'
+        response['Content-Disposition'] = "attachment;filename*=utf-8''{}".format(escape_uri_path(str(filename)))
+        return response
+        fp.close()
+
+
+def logout_download_need_key(request):
+    custom_filename = request.POST.get('custom_filename')
+    user = models.File.objects.get(custom_filename=custom_filename)  # 获得用户数据
+    filename = user.filename
+    filesize = user.size
+    username = user.user_name
+    
+    # 输入的公钥
+    public_key_str = request.POST.get('pubilckey')
+
+    pubilc_key_bytes = bytes(public_key_str,encoding='ISO-8859-1')
+    # print("*********************** publickey_b: ",len(pubilc_key_bytes),type(pubilc_key_bytes))
+    public_key = VerifyKey(pubilc_key_bytes,encoder=HexEncoder)   # 获得公钥
+    # print("*********************** publickey: ",type(public_key))
+
+    # 获得数字签名
+    sign_str = models.Key.objects.get(filename=custom_filename).sign
+    sign = bytes(sign_str,encoding='ISO-8859-1')
+    # print(sign,len(sign),type(sign))
+
+    # 解密数字签名
+    try:
+        file_sha256 = public_key.verify(sign,encoder=HexEncoder)
+    except:
+        message = '数字签名验证失败，可能是公钥输入错误，不下载文件。'
+        return render(request,'logout/signature.html',{'message':message})
+
+    file_sha256 = str(file_sha256,encoding='ISO-8859-1')
     # 调取对应加密文件
     filepath = os.path.join('./static/files/', str(filename))
     # print("-------- path ----",filepath)
@@ -664,11 +692,15 @@ def get_share_url_num(request):
     if check_num_token(token,remain_numbers):
         return render(request,'login/get_share_url.html',{'user':user,'url':url,'token':token})
     else:
-        # return HttpResponse("分享链接已超过访问次数！")
         mark=1
         flag=0
+        # return HttpResponse("分享链接已超过访问次数！")
         return render(request,'login/get_share_url.html',{'user':user,'url':url,'token':token,'mark':mark,'flag':flag})
 
+def signature(request):
+    custom_filename=request.GET.get('custom_filename')
+    user = models.File.objects.get(custom_filename=custom_filename)
+    return render(request, 'logout/signature.html',{'custom_filename':custom_filename})
 
 
 

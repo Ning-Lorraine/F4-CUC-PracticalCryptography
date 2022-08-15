@@ -14,8 +14,7 @@ class User(models.Model):
     email = models.EmailField(unique=False)                 # 使用Django内置的邮箱类型，并且唯一
     c_time = models.DateTimeField(auto_now_add=True)
     public_key=models.CharField(max_length=256,default='')  # 用户公钥
-    secret_key=models.CharField(max_length=256,default='')  
-    otp_secret_key = models.CharField(max_length=256,default="")
+    secret_key=models.CharField(max_length=256,default='')    
  
     def __str__(self):
         return self.name
