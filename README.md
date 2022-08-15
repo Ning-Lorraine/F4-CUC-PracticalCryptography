@@ -14,7 +14,7 @@
   - [x] 使用合法用户名和口令登录系统
   - [x] 禁止使用明文存储用户口令 【 PBKDF2 散列算法 慢速散列 针对散列算法（如MD5、SHA1等）的攻击方法】
     - 存储的口令即使被公开，也无法还原/解码出原始明文口令
-  - [x] （可选）双因素认证 （半成品代码）
+  - [ ] （可选）双因素认证 （半成品代码）
     - OTP: Google Authenticator  ( Authenticator )
 - 基于网页的文件上传加密与数字签名系统（20分）
   - [x] 已完成《基于网页的用户注册与登录系统》所有要求
@@ -46,18 +46,12 @@
 
 ## 快速上手体验
 
-- 下载环境依赖并运行
-
-  ```bash
-  pipenv install
-  pipenv shell
-  ```
-
-- 安装数据库
+- 安装数据库，docker-compose环境依赖
 
   ```bash
   sudo apt update
   sudo apt install mysql-server
+  sudo apt install docker-compose
   ```
 
 - 对Mysql root用户数据库权限进行设置
@@ -72,7 +66,7 @@
   #配置root
   update user set authentication_string='' where user='root'; 
   #为root设置密码
-  alter user 'root'@'localhost' identified with mysql_native_password by '123456（自行设置）';
+  alter user 'root'@'localhost' identified with mysql_native_password by '123456（默认设置）';
   
   #设置成功，退出
   quit;
@@ -81,21 +75,23 @@
   service mysql restart
   
   #新建数据库django
-  mysql>create database django DEFAULT CHARACTER SET utf8;
+  mysql>create database django DEFAULT CHARACTER SET utf8mb4;
   ```
 
-- 运行
+- 进入目录运行：
 
   ```bash
-  python manage.py runserver_plus
-  
-  python manage.py runserver_plus pan.cuc.com:8000 --cert app.crt --key-file app.key
+  sudo docker-compose up -d
   ```
 
+- 打开浏览器访问： https://pan.cuc.com，即可快速体验系统所有功能。
 
 ## 附录
 
-- 手动将CARoot.crt，intermedia.crt证书添加至浏览器受信任的根证书，中间证书颁发机构列表，否则浏览器将视其为不安全连接
+- 需要在主机与运行环境中添加127.0.0.1对应域名解析pan.cuc.com
+- 运行docker环境时请确保本地3306端口未被占用
+
+- 需要手动将cert目录下CARoot.crt，intermedia.crt证书添加至浏览器受信任的根证书，中间证书颁发机构列表，否则浏览器将视其为不安全连接
 
   ![](img/root.png)
 

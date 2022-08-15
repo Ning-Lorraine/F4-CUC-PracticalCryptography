@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-8y93zw_yzxsw1gatcrg7%zd0h24rq-n7er&k$&!evw*rg@eyom
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['pan.cuc.com','*']
+ALLOWED_HOSTS = ['pan.cuc.com']
 
 
 
@@ -98,7 +98,7 @@ DATABASES = {
         # mysql
         # ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'root';
         'PASSWORD':'123456',      #密码
-        'HOST':'127.0.0.1',    #IP
+        'HOST':'db',    #IP
         'PORT':'3306',                   #数据库端口
     }
 }
@@ -162,5 +162,5 @@ PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
     'django.contrib.auth.hashers.ScryptPasswordHasher',
 ]
-RUNSERVERPLUS_SERVER_ADDRESS_PORT = 'pan.cuc.com:8000'
+RUNSERVERPLUS_SERVER_ADDRESS_PORT = 'pan.cuc.com:443'
 
