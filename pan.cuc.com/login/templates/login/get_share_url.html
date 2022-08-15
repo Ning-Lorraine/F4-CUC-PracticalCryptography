@@ -148,6 +148,7 @@
             <table class="table table-bordered">
                 <thread>
                 <tr>
+                    <th>上传用户名</th>
                     <th>文件名</th>
                     <th>文件大小</th>
                     <th>sha256</th>
@@ -157,12 +158,13 @@
                 </thread>
                 <tbody>
                     <tr>
+                        <td>{{user.user_name}}</td>
                         <td>{{user.filename}}</td>
                         <td>{{user.size}}</td>
                         <td>{{user.sha256}}</td>
                         <td>{{user.create_time}}</td>
                         <td>
-                            <a class="btn btn-primary btn-xs" href="/handle_logout_download_file/?custom_filename={{user.custom_filename}}">下载文件</a>
+                            <a class="btn btn-primary btn-xs" href="/signature/?custom_filename={{user.custom_filename}}">下载文件</a>
                             <!-- <a class="btn btn-primary btn-xs" href="/download_hash/?custom_filename={{user.custom_filename}}">校验散列值</a> -->
                             <!-- <a class="btn btn-primary btn-xs" href="#">复制分享链接</a> -->
                             <button class="btn btn-primary btn-xs" type="button" onclick="dianwo()">复制分享链接</button>

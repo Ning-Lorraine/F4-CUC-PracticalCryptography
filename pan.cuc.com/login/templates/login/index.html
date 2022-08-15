@@ -6,7 +6,8 @@
     <div class="container">
         <div class="col-md-4 col-md-offset-4">
     {% if request.session.is_login %}
-    <h1>你好,{{ request.session.user_name }}！<br>欢迎回来！</h1>
+    <h2>您好,{{ request.session.user_name }}</h2>
+<p class="lead">欢迎访问中传放心传</p>
     <br><br>
     <form class='form-upload' action="/upload/" method="post">
         {% csrf_token %}
@@ -17,7 +18,8 @@
         <button onclick="window.location.href='/download'" class="btn btn-primary pull-right">下载文件</button>
     </form>
     {% else %}
-    <h1>你尚未登录，不可以访问哦！</h1>
+    <h1>中传放心传</h1>
+    <h3>您尚未登录，无法访问主页</h3>
     {% endif %}
         </div>
     </div> <!-- /container -->

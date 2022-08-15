@@ -25,8 +25,8 @@
     <div class="container">
         <div class="col-md-4 col-md-offset-4">
                 {% if request.session.is_login %}
-                    <h1>你好,{{ request.session.user_name }}！<br></h1>
-                    <h2>请选择上传文件！</h2>
+                <h2>您好,{{ request.session.user_name }}</h2>
+                <p class="lead">请选择上传文件</p>
                     <br>
                     <form method="post" action="" enctype="multipart/form-data">
                         {% if message %}
@@ -34,8 +34,8 @@
                         {% endif %}
                         {{uf}}
                         {% csrf_token %}
-                        <input type="text" hidden name="user" value="{{ request.session.user_name }}"/>
-                        <input type="text" name="username">
+                        <input type="text" hidden name="user"  value="{{ request.session.user_name }}"/>
+                        <input type="text" name="username" placeholder="输入文件备注">
                         <!-- <span>{{message}}</span> -->
                         <!-- <input type="file" name="avatar">  -->
                         <br>
@@ -57,7 +57,7 @@
                         </div>
                     </form>
                 {% else %}
-                    <h1>你尚未登录，不可以访问哦！</h1>
+                    <h3>您尚未登录，无法上传文件</h3>
                 {% endif %}
         </div>
     </div> <!-- /container -->
