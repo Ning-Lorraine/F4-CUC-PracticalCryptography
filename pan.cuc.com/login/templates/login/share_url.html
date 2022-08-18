@@ -4,56 +4,220 @@
 {% block title %}分享文件{% endblock %}
 {% block css %}
     <link rel="stylesheet" href="{% static 'css/login.css' %}">
+    <style type="text/css">
+        body{
+            margin: 0px;
+        }
+        .zhezhao{
+            position: fixed;
+            background: rgb(0, 0, 0);
+            left: 0px;
+            top: 0px;
+            width: 100%;
+            height: 100%;
+            opacity: 0.5;
+        }
+        .zhezhao2{
+            position: fixed;
+            left: 0px;
+            top: 0px;
+            width: 100%;
+            height: 100%;
+            opacity: 1;
+        }
+        .tankuang{
+            position: relative;
+            top: 70px;
+            background: rgb(255, 255, 255);
+            width: 90%;
+            border-radius: 5px;
+            margin: 5% auto;
+        }
+
+        #header{
+            height: 40px;
+            border-radius: 5px;
+            background: rgb(251, 230, 156);
+            color: rgb(36, 36, 36);
+            text-align: center;
+        }
+
+        #text{
+            vertical-align:middle;
+            line-height:40px;
+        }
+        
+        #header-right{
+            position: absolute;
+            width: 25px;
+            height: 25px;
+            border-radius: 5px;
+            background: rgb(250, 103, 103);
+            color: #fff;
+            right: 5px;
+            top: 5px;
+            text-align: center;
+        }
+        #wenzikuang{
+            top: 100px;
+            color: rgb(36, 36, 36);
+            border-radius: 5px;
+        }
+        .newzhezhao{
+            position: fixed;
+            background: rgb(0, 0, 0);
+            left: 0px;
+            top: 0px;
+            width: 100%;
+            height: 100%;
+            opacity: 0.5;
+        }
+        .newzhezhao2{
+            position: fixed;
+            left: 0px;
+            top: 0px;
+            width: 100%;
+            height: 100%;
+            opacity: 1;
+        }
+        .newtankuang{
+            position: relative;
+            top: 70px;
+            background: rgb(255, 255, 255);
+            width: 50%;
+            border-radius: 5px;
+            margin: 5% auto;
+        }
+
+        #newheader{
+            height: 40px;
+            border-radius: 5px;
+            background: rgb(251, 230, 156);
+            color: rgb(36, 36, 36);
+            text-align: center;
+        }
+
+        #newtext{
+            vertical-align:middle;
+            line-height:40px;
+        }
+        
+        #newwenzikuang{
+            top: 100px;
+            color: rgb(36, 36, 36);
+            border-radius: 5px;
+        }
+    </style>
 {% endblock %}
     
 
 {{% block content %}
-                
+     
+    
     <div class="container">
-
+        
         {% if message %}
                 <div class="alert alert-warning">{{ message }}</div>
         {% endif %}
 
         <div class="panel panel-default">
             <table class="table table-bordered">
+               
                 <div style="display:none">{{flag}}</div>
+                
                 {% if flag %}
-                    <thread>
-                    <tr>
-                        <th>文件名</th>
-                        <th>时间戳</th>
-                        <th>获取分享链接</th>
-                    </tr>
-                    </thread>
-                    <tbody>
-                        <tr>
-                            <td>{{share_token.filename}}</td>
-                            <td>{{share_token.time}}</td> 
-                            <td>
-                                <a class="btn btn-primary btn-xs" href="/get_share_url_time/?token={{share_token.token}}">获取分享链接</a>
-                            </td>
-                        </tr>
-                    </tbody>
-                {% else %}
-                    <thread>
+                    <div class="zhezhao" id='zhezhao'> </div>
+                    <div class="zhezhao2" id='zhezhao2'>
+                        <div class="tankuang"   id='zhezhao3'>
+                            <div id="header">
+                                <span id = "text"style="font-size:14px">请复制下方分享链接</span>
+                                <div id="header-right" onclick="hidder()">x</div>
+                            </div>
+                            <div id="wenzikuang">
+                                <div class="alert alert-warning">
+                                    {{url}}{{token}}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <form method="post" action="get_share_url_time" enctype="multipart/form-data" target="iframe_display">
+                        {% csrf_token %}
+                        <thread>
                         <tr>
                             <th>文件名</th>
-                            <th>开放访问次数</th>
+                            <th>时间戳</th>
                             <th>获取分享链接</th>
-                        </tr>
+                        </tr> 
                         </thread>
                         <tbody>
                             <tr>
                                 <td>{{share_token.filename}}</td>
-                                <td>{{share_token.share_numbers}}</td> 
+                                <td>{{share_token.time}}</td> 
                                 <td>
-                                    <a class="btn btn-primary btn-xs" href="/get_share_url_num/?token={{share_token.token}}">获取分享链接</a>
+                                    <input type="text" value="{{share_token.filename}}" hidden name="filename"/>
+                                    <input type="text" value="{{share_token.token}}" hidden name="token"/>
+                                    <!-- <a class="btn btn-primary btn-xs" href="/get_share_url_time/?token={{share_token.token}}">获取分享链接</a> -->
+                                    <input type="submit" value="获取分享链接" class="btn btn-primary btn-xs" onclick="dianwo()"/>
                                 </td>
                             </tr>
                         </tbody>
+                    </form>  
+                {% else %}
+                    <div class="zhezhao" id='zhezhao'> </div>
+                    <div class="zhezhao2" id='zhezhao2'>
+                        <div class="tankuang"   id='zhezhao3'>
+                            <div id="header">
+                                <span id = "text"style="font-size:14px">请复制下方分享链接</span>
+                                <div id="header-right" onclick="hidder()">x</div>
+                            </div>
+                            <div id="wenzikuang">
+                                <div class="alert alert-warning">
+                                    {{url}}{{token}}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <form method="post" action="get_share_url_num" enctype="multipart/form-data" target="iframe_display">
+                        {% csrf_token %}
+                        <thread>
+                            <tr>
+                                <th>文件名</th>
+                                <th>开放访问次数</th>
+                                <th>获取分享链接</th>
+                            </tr>
+                            </thread>
+                            <tbody>
+                                <tr>
+                                    <td>{{share_token.filename}}</td>
+                                    <td>{{share_token.share_numbers}}</td> 
+                                    <td>
+                                        <input type="text" value="{{share_token.filename}}" hidden name="filename"/>
+                                        <input type="text" value="{{share_token.token}}" hidden name="token"/>
+                                        <input type="submit" value="获取分享链接" class="btn btn-primary btn-xs" onclick="dianwo()">
+                                    </td>
+                                </tr>
+                            </tbody>
+                    </form>
                 {% endif %}
             </table>
         </div>
     </div>
+
+    <iframe id="iframeDisplay" name="iframe_display" style="display: none;"></iframe>
+    
+    <script type="text/javascript">
+        document.getElementById('zhezhao').style.display="none";
+        document.getElementById('zhezhao2').style.display="none";
+        document.getElementById('zhezhao3').style.display="none";
+        function dianwo(){
+            document.getElementById('zhezhao').style.display="";
+            document.getElementById('zhezhao2').style.display="";
+            document.getElementById('zhezhao3').style.display="";
+        }
+        function hidder(){
+            document.getElementById('zhezhao').style.display="none";
+            document.getElementById('zhezhao2').style.display="none";
+            document.getElementById('zhezhao3').style.display="none";
+        }
+    </script>
 {% endblock %}
