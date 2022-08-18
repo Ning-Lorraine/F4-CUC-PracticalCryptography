@@ -21,6 +21,27 @@ import time
 import base64
 import hmac
 
+# -*- coding: utf-8 -*-
+'''
+自动创建文件夹
+'''
+
+
+# 创建文件夹函数
+def creatFile(path):
+    # path 文件创建路径，字符串格式
+    V_path = str(path)
+    # 去除首位空格
+    V_pat = V_path.strip()
+    # 去除尾部 \ 符号
+    V_pat = V_pat.rstrip("\\")
+    # 判断路径是否存在, 存在为True， 不存在为False
+    isExists = os.path.exists(V_pat)
+    # 判断结果
+    if not isExists:
+        os.makedirs(V_pat)  # makedirs 创建文件时如果路径不存在会创建这个路径
+
+
 
 def index(request):
     pass
@@ -197,6 +218,11 @@ def upload(request):
     form=FileForm(data=request.POST,files=request.FILES)
     file_object=request.FILES.get('avatar')
     
+    #若不存在files文件夹，创建文件夹
+    filepath = "./static/files"
+    creatFile(filepath)
+
+    # 将哈希值写进txt文件
     if request.method == "GET":
         form=FileForm()
         return render(request,'login/upload.html',{'form':form})
@@ -509,7 +535,9 @@ def download_hash(request):
     filename=str(user.filename)
     str1='.'
     filename = filename[:filename.index(str1)]+'散列值.txt'
-    
+    #若不存在hash文件夹，创建文件夹
+    file_path = "./static/hash"
+    creatFile(file_path)
     # 将哈希值写进txt文件
     filepath="./static/hash/"+filename
     file = open(filepath,'w+')
@@ -544,6 +572,7 @@ def share_file_num(request):
     share_numbers =request.POST.get('share_numbers')
     key= str(filename) # key设置成文件名
     token=''
+    url= 'https://pan.cuc.com/get_share_url_num/?token='
     if share_numbers: 
             flag = 0
             token = build_num_token(key,share_numbers)
@@ -558,13 +587,14 @@ def share_file_num(request):
         message = "请设置分享次数!"
         return render(request, 'login/share_num.html',{'message':message,'filename':filename})
     
-    return render(request,'login/share_url.html',{'flag':flag,'token':token,'share_token':share_token})
+    return render(request,'login/share_url.html',{'flag':flag,'token':token,'share_token':share_token,'url':url})
 
 def share_file_time(request):
     filename = request.POST.get('filename')
     out_time =request.POST.get('out_time')
     key= str(filename) # key设置成文件名
     token=''
+    url= 'https://pan.cuc.com/get_share_url_time/?token='
     flag = 1
     if out_time: #设置分享时间
         if out_time =='3s':
@@ -587,7 +617,7 @@ def share_file_time(request):
         message = "请设置分享时长!"
         return render(request, 'login/share_time.html',{'message':message,'filename':filename})
     
-    return render(request,'login/share_url.html',{'flag':flag,'token':token,'share_token':share_token})
+    return render(request,'login/share_url.html',{'flag':flag,'token':token,'share_token':share_token,'url':url})
 
 
 # 摘要算法加密
@@ -671,7 +701,7 @@ def check_num_token(token,remain_numbers):
 def get_share_url_time(request):
     token = request.GET.get('token')
     user1 = models.Token.objects.get(token=token)
-    url = 'https://pan.cuc.com:8000/get_share_url_time/?token='
+    url = 'https://pan.cuc.com/get_share_url_time/?token='
     filename=user1.filename
     user= models.File.objects.get(filename=filename)
     if check_time_token(token):
@@ -683,12 +713,13 @@ def get_share_url_time(request):
 
 def get_share_url_num(request):
     token = request.GET.get('token')
-    filename = request.GET.get('filename')
-    url = 'https://pan.cuc.com:8000/get_share_url_num/?token='
+    # filename = request.POST.get('filename')
+    url = 'https://pan.cuc.com/get_share_url_num/?token='
     user1 = models.Token2.objects.get(token=token) 
     filename=user1.filename
     remain_numbers=user1.remain_numbers
     user= models.File.objects.get(filename=filename)
+    # return HttpResponse("能显示吗？？？")
     if check_num_token(token,remain_numbers):
         return render(request,'login/get_share_url.html',{'user':user,'url':url,'token':token})
     else:
