@@ -3,7 +3,7 @@
 [一个基于python+django实现的文件管理系统](https://github.com/Ning-Lorraine/F4-CUC-PracticalCryptography)
 <br>
 
-**作者：** 徐苒
+**作者：** 
 
 **负责工作：** 注册用户和匿名用户的文件加密与解密实现
 
